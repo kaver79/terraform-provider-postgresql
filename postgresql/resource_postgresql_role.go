@@ -217,10 +217,11 @@ func resourcePostgreSQLRoleCreate(db *DBConnection, d *schema.ResourceData) erro
 		boolOpts = append(boolOpts, boolOptType{roleBypassRLSAttr, "BYPASSRLS", "NOBYPASSRLS"})
 	}
 
-	if db.featureSupported(featureReplication) {
-		boolOpts = append(boolOpts, boolOptType{roleReplicationAttr, "REPLICATION", "NOREPLICATION"})
-	}
-
+	/*
+		if db.featureSupported(featureReplication) {
+			boolOpts = append(boolOpts, boolOptType{roleReplicationAttr, "REPLICATION", "NOREPLICATION"})
+		}
+	*/
 	createOpts := make([]string, 0, len(stringOpts)+len(intOpts)+len(boolOpts))
 
 	for _, opt := range stringOpts {
@@ -308,6 +309,10 @@ func resourcePostgreSQLRoleCreate(db *DBConnection, d *schema.ResourceData) erro
 	}
 
 	if err = setAssumeRole(txn, d); err != nil {
+		return err
+	}
+
+	if err := setRoleReplication(txn, d); err != nil {
 		return err
 	}
 
@@ -860,7 +865,7 @@ func setRoleReplication(txn *sql.Tx, d *schema.ResourceData) error {
 		tok = "REPLICATION"
 	}
 	roleName := d.Get(roleNameAttr).(string)
-	sql := fmt.Sprintf("ALTER ROLE %s WITH %s", pq.QuoteIdentifier(roleName), tok)
+	sql := fmt.Sprintf("grant %s to %s ;", tok, pq.QuoteIdentifier(roleName))
 	if _, err := txn.Exec(sql); err != nil {
 		return fmt.Errorf("Error updating role REPLICATION: %w", err)
 	}
