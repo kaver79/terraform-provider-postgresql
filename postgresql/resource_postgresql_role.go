@@ -860,16 +860,15 @@ func setRoleReplication(txn *sql.Tx, d *schema.ResourceData) error {
 	}
 
 	replication := d.Get(roleReplicationAttr).(bool)
-	tok := "NOREPLICATION"
 	if replication {
-		tok = "REPLICATION"
-	}
-	roleName := d.Get(roleNameAttr).(string)
-	sql := fmt.Sprintf("grant %s to %s ;", tok, pq.QuoteIdentifier(roleName))
-	if _, err := txn.Exec(sql); err != nil {
-		return fmt.Errorf("Error updating role REPLICATION: %w", err)
-	}
+		tok := "rds_replication"
 
+		roleName := d.Get(roleNameAttr).(string)
+		sql := fmt.Sprintf("grant %s to %s ;", tok, pq.QuoteIdentifier(roleName))
+		if _, err := txn.Exec(sql); err != nil {
+			return fmt.Errorf("Error updating role REPLICATION: %w", err)
+		}
+	}
 	return nil
 }
 
